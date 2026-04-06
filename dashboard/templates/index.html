@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traffic Control Dashboard</title>
+    <style>
+        :root {
+            --bg: #06131a;
+            --panel: #0f2230;
+            --panel-2: #143044;
+            --border: #2f4f63;
+            --text: #e7f4ff;
+            --muted: #9bb8ca;
+            --ok: #22c55e;
+            --warn: #fbbf24;
+            --danger: #ef4444;
+            --accent: #22d3ee;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 10% 10%, #133042 0%, transparent 45%),
+                radial-gradient(circle at 90% 15%, #163a4f 0%, transparent 40%),
+                var(--bg);
+        }
+
+        .container {
+            width: min(1280px, 94vw);
+            margin: 0 auto;
+            padding: 18px 0 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            letter-spacing: .4px;
+        }
+
+        .title p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        .links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel);
+            color: var(--text);
+            padding: 8px 12px;
+            text-decoration: none;
+            font-size: .9rem;
+            cursor: pointer;
+        }
+
+        .btn:hover { filter: brightness(1.08); }
+        .btn.primary { background: #155e75; border-color: #1f8ba7; }
+        .btn.success { background: #166534; border-color: #22c55e; }
+        .btn.danger { background: #7f1d1d; border-color: #ef4444; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 10px;
+        }
+
+        .stat .k { color: var(--muted); font-size: .82rem; }
+        .stat .v { font-size: 1.2rem; font-weight: 700; margin-top: 4px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 12px;
+        }
+
+        .panel h2, .panel h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 160px;
+        }
+
+        label { font-size: .82rem; color: var(--muted); }
+
+        select, input {
+            background: #0a1b26;
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 8px;
+            outline: none;
+        }
+
+        .status-pill {
+            margin-left: auto;
+            font-size: .82rem;
+            color: #d1fae5;
+            background: #065f46;
+            border: 1px solid #10b981;
+            border-radius: 999px;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .cam {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            background: #0a1b26;
+        }
+
+        .cam-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: .9rem;
+            color: var(--muted);
+        }
+
+        .cam img {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .signal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: .92rem;
+        }
+
+        .signal {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid #1f2937;
+            background: #64748b;
+        }
+
+        .green { background: var(--ok); }
+        .yellow { background: var(--warn); }
+        .red { background: var(--danger); }
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.2; } }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+            font-size: .84rem;
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            background: #102636;
+        }
+
+        .bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+
+        pre {
+            margin: 0;
+            padding: 10px;
+            font-size: .8rem;
+            background: #0a1b26;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: auto;
+            min-height: 260px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            max-width: 360px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            background: #0b2231;
+            color: var(--text);
+            font-size: .9rem;
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast.show { display: block; }
+
+        @media (max-width: 980px) {
+            .stats { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+            .camera-grid { grid-template-columns: 1fr; }
+            .bottom { grid-template-columns: 1fr; }
+            .status-pill { margin-left: 0; }
+            .topbar { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="topbar">
+        <div class="title">
+            <h1>AI Traffic Signal Dashboard</h1>
+            <p>Adaptive control with live counts, priority score, emergency and manual override.</p>
+        </div>
+        <div class="links">
+            <a class="btn" href="/violations">Violation Monitor</a>
+            <button class="btn" onclick="refreshNow()">Refresh</button>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="k">Current Green</div><div class="v" id="green">N/A</div></div>
+        <div class="stat"><div class="k">Remaining Time</div><div class="v"><span id="time">0</span>s</div></div>
+        <div class="stat"><div class="k">Cycle</div><div class="v" id="cycle">0</div></div>
+        <div class="stat"><div class="k">Live Status</div><div class="v" id="liveStatus">Checking...</div></div>
+        <div class="stat"><div class="k">Mode</div><div class="v" id="mode">AUTO</div></div>
+    </div>
+
+    <div class="panel">
+        <h2>Manual Control</h2>
+        <div class="controls">
+            <div class="field">
+                <label for="manualDirection">Direction</label>
+                <select id="manualDirection">
+                    <option value="N">North (N)</option>
+                    <option value="S">South (S)</option>
+                    <option value="E">East (E)</option>
+                    <option value="W">West (W)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="manualDuration">Green Duration (seconds)</label>
+                <input id="manualDuration" type="number" value="20" min="5" max="90" />
+            </div>
+            <button class="btn success" onclick="applyManualSwitch()">Apply Manual</button>
+            <button class="btn danger" onclick="clearManualSwitch()">Back To Auto</button>
+            <div class="status-pill" id="overrideState">No pending override</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Camera Feeds</h2>
+        <div class="camera-grid" id="cameraGrid"></div>
+    </div>
+
+    <div class="bottom">
+        <div class="panel">
+            <h3>Emergency Flags</h3>
+            <pre id="emergency">{}</pre>
+        </div>
+        <div class="panel">
+            <h3>Priority Scores</h3>
+            <pre id="priority">{}</pre>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DIRS = ["N", "S", "E", "W"];
+const DIR_LABEL = { N: "North", S: "South", E: "East", W: "West" };
+
+let uiState = {
+    currentGreen: "N/A",
+    remainingTime: 0,
+    cycle: 0,
+    mode: "AUTO",
+    emergency: { N: false, S: false, E: false, W: false },
+    priority: { N: 0, S: 0, E: 0, W: 0 },
+    vehicleCount: { N: 0, S: 0, E: 0, W: 0 },
+    liveCount: { N: 0, S: 0, E: 0, W: 0 },
+    lastLiveUpdate: 0,
+    manualOverride: { enabled: false, direction: null, duration: 20 }
+};
+
+const toastEl = document.getElementById("toast");
+
+function showToast(message, timeoutMs = 2200) {
+    toastEl.textContent = message;
+    toastEl.classList.add("show");
+    window.setTimeout(() => toastEl.classList.remove("show"), timeoutMs);
+}
+
+function renderCameraCards() {
+    const grid = document.getElementById("cameraGrid");
+    grid.innerHTML = "";
+
+    DIRS.forEach((dir) => {
+        const card = document.createElement("div");
+        card.className = "cam";
+        card.innerHTML = `
+            <div class="cam-head">
+                <strong>${DIR_LABEL[dir]}</strong>
+                <span id="signalText${dir}">Signal: RED</span>
+            </div>
+            <img src="/video/${dir}" alt="${DIR_LABEL[dir]} camera" />
+            <div class="signal-row">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div id="signal${dir}" class="signal red"></div>
+                    <span id="timer${dir}">0s</span>
+                </div>
+                <strong id="live${dir}">Live: 0</strong>
+            </div>
+            <div class="meta">
+                <div class="chip" id="count${dir}">Count: 0</div>
+                <div class="chip" id="priority${dir}">Priority: 0.00</div>
+                <div class="chip" id="emergency${dir}">Emergency: No</div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function safeNum(v, fallback = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function updateOverview() {
+    const isYellowZero =
+        (typeof uiState.currentGreen === "string") &&
+        uiState.currentGreen.startsWith("YELLOW_") &&
+        safeNum(uiState.remainingTime, 0) === 0;
+    const greenLabel = isYellowZero ? "ALL RED" : (uiState.currentGreen || "N/A");
+    document.getElementById("green").textContent = greenLabel;
+    document.getElementById("time").textContent = Math.max(0, Math.floor(uiState.remainingTime));
+    document.getElementById("cycle").textContent = safeNum(uiState.cycle, 0);
+    document.getElementById("mode").textContent = uiState.mode || "AUTO";
+    document.getElementById("liveStatus").textContent = getLiveStatusText();
+    document.getElementById("liveStatus").style.color = getLiveStatusColor();
+
+    const manual = uiState.manualOverride || {};
+    const text = manual.enabled
+        ? `Pending override: ${manual.direction} for ${manual.duration}s`
+        : "No pending override";
+    document.getElementById("overrideState").textContent = text;
+}
+
+function getLiveStatusText() {
+    if (!uiState.lastLiveUpdate) {
+        return "No data";
+    }
+    const age = Date.now() / 1000 - uiState.lastLiveUpdate;
+    if (age <= 3.5) {
+        return "Live";
+    }
+    return `Stale: ${age.toFixed(1)}s`;
+}
+
+function getLiveStatusColor() {
+    if (!uiState.lastLiveUpdate) {
+        return "#f59e0b";
+    }
+    const age = Date.now() / 1000 - uiState.lastLiveUpdate;
+    return age <= 3.5 ? "#22c55e" : "#ef4444";
+}
+
+function updateSignalsAndCards() {
+    DIRS.forEach((dir) => {
+        const signalEl = document.getElementById(`signal${dir}`);
+        const timerEl = document.getElementById(`timer${dir}`);
+        const signalTextEl = document.getElementById(`signalText${dir}`);
+
+        signalEl.className = "signal";
+
+        let signalText = "RED";
+        if (uiState.currentGreen === `YELLOW_${dir}` && safeNum(uiState.remainingTime, 0) > 0) {
+            signalEl.classList.add("yellow");
+            signalText = "YELLOW";
+            timerEl.textContent = `${Math.max(0, Math.floor(uiState.remainingTime))}s`;
+        } else if (uiState.currentGreen === dir) {
+            signalEl.classList.add("green");
+            signalText = "GREEN";
+            timerEl.textContent = `${Math.max(0, Math.floor(uiState.remainingTime))}s`;
+        } else {
+            signalEl.classList.add("red");
+            timerEl.textContent = "0s";
+        }
+
+        if (uiState.emergency[dir] === true || uiState.emergency[dir] === 1) {
+            signalEl.classList.add("blink");
+            signalText = `${signalText} | EMERGENCY`;
+        }
+
+        signalTextEl.textContent = `Signal: ${signalText}`;
+        document.getElementById(`count${dir}`).textContent = `Count: ${safeNum(uiState.vehicleCount[dir], 0)}`;
+        document.getElementById(`priority${dir}`).textContent = `Priority: ${safeNum(uiState.priority[dir], 0).toFixed(2)}`;
+        document.getElementById(`emergency${dir}`).textContent = `Emergency: ${(uiState.emergency[dir] ? "Yes" : "No")}`;
+        document.getElementById(`live${dir}`).textContent = `Live: ${safeNum(uiState.liveCount[dir], 0)}`;
+    });
+}
+
+async function fetchData() {
+    try {
+        const res = await fetch("/data");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const d = await res.json();
+        const prevGreen = uiState.currentGreen;
+        const incomingGreen = d.current_green || "N/A";
+        const incomingCycle = safeNum(d.cycle, 0);
+        const incomingRemaining = safeNum(d.remaining_time, 0);
+
+        uiState.currentGreen = incomingGreen;
+        uiState.remainingTime = incomingRemaining;
+        uiState.cycle = incomingCycle;
+        uiState.mode = d.mode || "AUTO";
+        uiState.emergency = d.emergency || uiState.emergency;
+        uiState.priority = d.priority || uiState.priority;
+        uiState.vehicleCount = d.live_vehicle_count || d.vehicle_count || uiState.vehicleCount;
+        uiState.liveCount = d.live_vehicle_count || d.vehicle_count || uiState.liveCount;
+        uiState.lastLiveUpdate = Number(d.last_live_update) || uiState.lastLiveUpdate;
+        uiState.manualOverride = d.manual_override || uiState.manualOverride;
+
+        if (prevGreen !== uiState.currentGreen) {
+            showToast(`Signal changed to ${uiState.currentGreen}`);
+        }
+
+        document.getElementById("emergency").textContent = JSON.stringify(uiState.emergency, null, 2);
+        document.getElementById("priority").textContent = JSON.stringify(uiState.priority, null, 2);
+
+        updateOverview();
+        updateSignalsAndCards();
+    } catch (err) {
+        showToast(`Data fetch failed: ${err.message}`, 3000);
+    }
+}
+
+async function fetchLiveCounts() {
+    try {
+        const res = await fetch("/live-counts");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        uiState.liveCount = data || uiState.liveCount;
+        updateSignalsAndCards();
+    } catch (err) {
+        showToast(`Live count fetch failed: ${err.message}`, 3000);
+    }
+}
+
+async function applyManualSwitch() {
+    const direction = document.getElementById("manualDirection").value;
+    const duration = Math.max(5, Math.min(90, safeNum(document.getElementById("manualDuration").value, 20)));
+
+    try {
+        const res = await fetch("/manual-switch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ direction, duration })
+        });
+        const out = await res.json();
+        if (!res.ok || !out.ok) throw new Error(out.error || "manual override failed");
+
+        uiState.manualOverride = out.manual_override || uiState.manualOverride;
+        updateOverview();
+        showToast(`Manual override queued: ${direction} for ${duration}s`);
+    } catch (err) {
+        showToast(`Manual override failed: ${err.message}`, 3200);
+    }
+}
+
+async function clearManualSwitch() {
+    try {
+        const res = await fetch("/manual-switch/clear", { method: "POST" });
+        const out = await res.json();
+        if (!res.ok || !out.ok) throw new Error("clear override failed");
+
+        uiState.manualOverride = out.manual_override || uiState.manualOverride;
+        updateOverview();
+        showToast("Manual override cleared");
+    } catch (err) {
+        showToast(`Clear failed: ${err.message}`, 3000);
+    }
+}
+
+function refreshNow() {
+    fetchData();
+    fetchLiveCounts();
+}
+
+renderCameraCards();
+refreshNow();
+setInterval(fetchData, 1000);
+setInterval(fetchLiveCounts, 1000);
+</script>
+</body>
+</html>

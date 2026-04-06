@@ -1,0 +1,1 @@
+from .emergency_detection import detect_emergency

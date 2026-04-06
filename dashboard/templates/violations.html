@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Violation Monitor</title>
+    <style>
+        :root {
+            --bg: #06131a;
+            --panel: #102636;
+            --panel-2: #15374d;
+            --border: #335a70;
+            --text: #e7f4ff;
+            --muted: #9ec0d5;
+            --accent: #22d3ee;
+            --danger: #ef4444;
+            --ok: #22c55e;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at 10% 10%, #123347 0%, transparent 46%),
+                radial-gradient(circle at 90% 10%, #16394e 0%, transparent 42%),
+                var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            width: min(1200px, 94vw);
+            margin: 0 auto;
+            padding: 16px 0 24px;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.45rem;
+        }
+
+        .title p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: .92rem;
+        }
+
+        .btn {
+            text-decoration: none;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel);
+            padding: 8px 12px;
+            font-size: .9rem;
+        }
+
+        .btn:hover { filter: brightness(1.08); }
+
+        .row {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 12px;
+        }
+
+        .metric {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .muted { color: var(--muted); font-size: .9rem; }
+
+        .filter {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        label { font-size: .84rem; color: var(--muted); }
+
+        select, button {
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #0a1b26;
+            color: var(--text);
+            padding: 8px 10px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #155e75;
+            border-color: #1f8ba7;
+        }
+
+        .live-feed img {
+            width: 100%;
+            max-height: 320px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .gallery .tile {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #0a1b26;
+            overflow: hidden;
+        }
+
+        .gallery img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tile .cap {
+            font-size: .78rem;
+            color: var(--muted);
+            padding: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .9rem;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: center;
+        }
+
+        th { background: #113347; }
+
+        .empty {
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        @media (max-width: 900px) {
+            .row { grid-template-columns: 1fr; }
+            .top { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top">
+        <div class="title">
+            <h1>Lane Violation Monitor</h1>
+            <p>Latest captured evidence with per-direction filtering and live camera preview.</p>
+        </div>
+        <a class="btn" href="/">Back To Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="panel">
+            <div class="muted">Displayed Violations</div>
+            <div class="metric">{{ total }}</div>
+            <div class="muted">Manual refresh (no auto refresh)</div>
+        </div>
+
+        <div class="panel">
+            <form class="filter" method="get" action="/violations">
+                <div>
+                    <label for="direction">Direction</label><br>
+                    <select id="direction" name="direction">
+                        <option value="ALL" {% if selected_direction == "ALL" %}selected{% endif %}>All</option>
+                        <option value="N" {% if selected_direction == "N" %}selected{% endif %}>North</option>
+                        <option value="S" {% if selected_direction == "S" %}selected{% endif %}>South</option>
+                        <option value="E" {% if selected_direction == "E" %}selected{% endif %}>East</option>
+                        <option value="W" {% if selected_direction == "W" %}selected{% endif %}>West</option>
+                    </select>
+                </div>
+                <button type="submit">Apply Filter</button>
+            </form>
+            <form method="post" action="/violations/clear?direction={{ selected_direction }}" style="margin-top:8px;">
+                <button type="submit" style="background:#7f1d1d;border-color:#ef4444;">Clear Violations</button>
+            </form>
+            <div class="live-feed" style="margin-top:10px;">
+                <img src="/video/{% if selected_direction == 'ALL' %}N{% else %}{{ selected_direction }}{% endif %}" alt="Live camera feed">
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 12px;">
+        <h3 style="margin-top:0;">Captured Images</h3>
+        {% if violations|length == 0 %}
+            <div class="empty">No violations available for this filter.</div>
+        {% else %}
+            <div class="gallery">
+                {% for v in violations %}
+                    {% if v.image %}
+                        {% set image_file = v.image.replace('\\\\','/').split('/')[-1] %}
+                        <div class="tile">
+                            <img src="{{ url_for('violation_image', filename=image_file) }}" alt="Violation {{ v.id }}">
+                            <div class="cap">ID {{ v.id }} | {{ v.direction }} | {{ v.time }}</div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">Violation Logs</h3>
+        {% if violations|length == 0 %}
+            <div class="empty">No log rows to show.</div>
+        {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Record ID</th>
+                        <th>Vehicle ID</th>
+                        <th>Direction</th>
+                        <th>From Lane</th>
+                        <th>To Lane</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in violations %}
+                    <tr>
+                        <td>{{ v.kind }}</td>
+                        <td>{{ v.id }}</td>
+                        <td>{{ v.vehicle_id }}</td>
+                        <td>{{ v.direction }}</td>
+                        <td>{{ v.from_lane }}</td>
+                        <td>{{ v.to_lane }}</td>
+                        <td>{{ v.time }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

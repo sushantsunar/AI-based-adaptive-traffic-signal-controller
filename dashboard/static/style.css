@@ -1,0 +1,31 @@
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    padding: 10px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.video video {
+    width: 100%;
+    border-radius: 10px;
+    border: 2px solid #22c55e;
+}
+
+.info {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+    body { font-family: Arial; background:#0f172a; color:white; }
+    .grid { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; }
+    .box { padding:20px; border-radius:10px; text-align:center; transition:0.3s; }
+    .green { background:#16a34a; }   /* green light */
+    .red { background:#991b1b; }     /* red light */
+    .yellow { background:#facc15; color:black; } /* yellow light */
