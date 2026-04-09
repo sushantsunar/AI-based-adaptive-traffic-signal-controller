@@ -11,6 +11,9 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+from dashboard.demo import demo_bp
+app.register_blueprint(demo_bp)
+
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_PATH = os.path.join(BASE_DIR, "database", "traffic.db")
 VIOLATIONS_DIR = os.path.join(BASE_DIR, "violations")

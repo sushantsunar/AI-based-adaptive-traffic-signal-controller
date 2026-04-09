@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo Traffic Dashboard</title>
+    <style>
+        :root {
+            --bg: #06131a;
+            --panel: #0f2230;
+            --panel-2: #143044;
+            --border: #2f4f63;
+            --text: #e7f4ff;
+            --muted: #9bb8ca;
+            --ok: #22c55e;
+            --warn: #fbbf24;
+            --danger: #ef4444;
+            --accent: #22d3ee;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 10% 10%, #133042 0%, transparent 45%),
+                radial-gradient(circle at 90% 15%, #163a4f 0%, transparent 40%),
+                var(--bg);
+        }
+
+        .container {
+            width: min(1280px, 94vw);
+            margin: 0 auto;
+            padding: 18px 0 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            letter-spacing: .4px;
+        }
+
+        .title p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        .links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel);
+            color: var(--text);
+            padding: 8px 12px;
+            text-decoration: none;
+            font-size: .9rem;
+            cursor: pointer;
+        }
+
+        .btn:hover { filter: brightness(1.08); }
+        .btn.primary { background: #155e75; border-color: #1f8ba7; }
+        .btn.success { background: #166534; border-color: #22c55e; }
+        .btn.danger { background: #7f1d1d; border-color: #ef4444; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 10px;
+        }
+
+        .stat .k { color: var(--muted); font-size: .82rem; }
+        .stat .v { font-size: 1.2rem; font-weight: 700; margin-top: 4px; }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 12px;
+        }
+
+        .panel h2, .panel h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .cam {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            background: #0a1b26;
+        }
+
+        .cam-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: .9rem;
+            color: var(--muted);
+        }
+
+        .cam img {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .signal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: .92rem;
+        }
+
+        .signal {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid #1f2937;
+            background: #64748b;
+        }
+
+        .green { background: var(--ok); }
+        .yellow { background: var(--warn); }
+        .red { background: var(--danger); }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+            font-size: .84rem;
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            background: #102636;
+        }
+
+        .note {
+            margin-bottom: 16px;
+            color: var(--muted);
+            font-size: .92rem;
+        }
+
+        @media (max-width: 980px) {
+            .stats { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+            .camera-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="topbar">
+        <div class="title">
+            <h1>Demo Traffic Dashboard</h1>
+            <p>Simulated dashboard view using the same layout style as the real system.</p>
+        </div>
+        <div class="links">
+            <a class="btn" href="/">Real Dashboard</a>
+            <a class="btn primary" href="/demo">Demo Mode</a>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="k">Current Phase</div><div class="v" id="currentPhase">N</div></div>
+        <div class="stat"><div class="k">Remaining Time</div><div class="v" id="remainingTime">0s</div></div>
+        <div class="stat"><div class="k">Cycle</div><div class="v" id="cycleCount">0</div></div>
+        <div class="stat"><div class="k">Mode</div><div class="v">DEMO</div></div>
+    </div>
+
+    <div class="panel">
+        <h2>Simulation Summary</h2>
+        <p class="note">This demo reuses the real dashboard design and simulates a traffic signal cycle. Video feeds pause on RED and resume on GREEN or YELLOW.</p>
+    </div>
+
+    <div class="panel">
+        <h2>Camera Feeds</h2>
+        <div class="camera-grid" id="cameraGrid">
+            <div class="cam">
+                <div class="cam-head"><strong>North</strong><span id="signalTextN">Signal: RED</span></div>
+                <img src="/demo/video/N" alt="North camera" />
+                <div class="signal-row"><div style="display:flex;align-items:center;gap:8px"><div id="signalN" class="signal red"></div><span id="timerN">0s</span></div><strong id="stateN">Live</strong></div>
+                <div class="meta"><div class="chip" id="countN">Phase: RED</div><div class="chip" id="priorityN">Direction: N</div><div class="chip" id="emergencyN">Demo only</div></div>
+            </div>
+            <div class="cam">
+                <div class="cam-head"><strong>East</strong><span id="signalTextE">Signal: RED</span></div>
+                <img src="/demo/video/E" alt="East camera" />
+                <div class="signal-row"><div style="display:flex;align-items:center;gap:8px"><div id="signalE" class="signal red"></div><span id="timerE">0s</span></div><strong id="stateE">Live</strong></div>
+                <div class="meta"><div class="chip" id="countE">Phase: RED</div><div class="chip" id="priorityE">Direction: E</div><div class="chip">Demo only</div></div>
+            </div>
+            <div class="cam">
+                <div class="cam-head"><strong>South</strong><span id="signalTextS">Signal: RED</span></div>
+                <img src="/demo/video/S" alt="South camera" />
+                <div class="signal-row"><div style="display:flex;align-items:center;gap:8px"><div id="signalS" class="signal red"></div><span id="timerS">0s</span></div><strong id="stateS">Live</strong></div>
+                <div class="meta"><div class="chip" id="countS">Phase: RED</div><div class="chip" id="priorityS">Direction: S</div><div class="chip">Demo only</div></div>
+            </div>
+            <div class="cam">
+                <div class="cam-head"><strong>West</strong><span id="signalTextW">Signal: RED</span></div>
+                <img src="/demo/video/W" alt="West camera" />
+                <div class="signal-row"><div style="display:flex;align-items:center;gap:8px"><div id="signalW" class="signal red"></div><span id="timerW">0s</span></div><strong id="stateW">Live</strong></div>
+                <div class="meta"><div class="chip" id="countW">Phase: RED</div><div class="chip" id="priorityW">Direction: W</div><div class="chip">Demo only</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const DIRS = ["N", "E", "S", "W"];
+const BADGE_MAP = {
+    RED: { color: "red", text: "RED" },
+    GREEN: { color: "green", text: "GREEN" },
+    YELLOW: { color: "yellow", text: "YELLOW" }
+};
+
+function updateStatus(payload) {
+    const phase = payload.current_green || "N";
+    const remaining = Number(payload.remaining_time || 0);
+    const cycle = Number(payload.cycle || 0);
+
+    document.getElementById("currentPhase").textContent = phase;
+    document.getElementById("remainingTime").textContent = `${remaining}s`;
+    document.getElementById("cycleCount").textContent = cycle;
+
+    DIRS.forEach((dir) => {
+        const signalEl = document.getElementById(`signal${dir}`);
+        const signalText = document.getElementById(`signalText${dir}`);
+        const timerEl = document.getElementById(`timer${dir}`);
+        const countChip = document.getElementById(`count${dir}`);
+        const phaseName = phase === dir ? "GREEN"
+            : phase === `YELLOW_${dir}` ? "YELLOW"
+            : "RED";
+
+        signalEl.className = `signal ${BADGE_MAP[phaseName].color}`;
+        signalText.textContent = `Signal: ${phaseName}`;
+        timerEl.textContent = phaseName === "RED" ? "0s" : `${remaining}s`;
+        countChip.textContent = `Phase: ${phaseName}`;
+    });
+}
+
+async function fetchDemoState() {
+    try {
+        const res = await fetch("/demo/state");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        updateStatus(data);
+    } catch (err) {
+        console.warn("Demo state fetch failed", err);
+    }
+}
+
+fetchDemoState();
+setInterval(fetchDemoState, 1000);
+</script>
+</body>
+</html>
