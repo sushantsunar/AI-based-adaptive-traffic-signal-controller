@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import secrets
+import datetime
 from pathlib import Path
 
 # Always resolve DB relative to project root (not current working directory).
@@ -36,7 +38,48 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
     conn.commit()
+
+    # Bootstrap an initial admin user on first run.
+    # - If DASHBOARD_ADMIN_PASSWORD is set, use it.
+    # - Otherwise generate a random password and print it once to the console.
+    try:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = int(cursor.fetchone()[0] or 0)
+        if user_count == 0:
+            from werkzeug.security import generate_password_hash
+
+            username = os.environ.get("DASHBOARD_ADMIN_USER", "admin").strip() or "admin"
+            env_password = os.environ.get("DASHBOARD_ADMIN_PASSWORD")
+            if env_password is not None and str(env_password).strip() != "":
+                password = str(env_password)
+                password_note = "(from DASHBOARD_ADMIN_PASSWORD)"
+            else:
+                password = secrets.token_urlsafe(12)
+                password_note = "(auto-generated)"
+
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                (username, generate_password_hash(password), datetime.datetime.utcnow().isoformat() + "Z"),
+            )
+            conn.commit()
+            print("\n=== Dashboard login created ===")
+            print(f"Username: {username}")
+            print(f"Password: {password} {password_note}")
+            print("Set DASHBOARD_ADMIN_PASSWORD to control this.\n")
+    except Exception:
+        # Best-effort; don't break the main app if auth bootstrap fails.
+        pass
+
     conn.close()
 
 def insert_violation(vehicle_id, direction, timestamp, image_path):

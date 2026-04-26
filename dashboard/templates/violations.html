@@ -43,6 +43,14 @@
             margin-bottom: 12px;
         }
 
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
         .title h1 {
             margin: 0;
             font-size: 1.45rem;
@@ -180,7 +188,15 @@
             <h1>Lane Violation Monitor</h1>
             <p>Latest captured evidence with per-direction filtering and live camera preview.</p>
         </div>
-        <a class="btn" href="/">Back To Dashboard</a>
+        <div class="actions">
+            <a class="btn" href="/">Back To Dashboard</a>
+            {% if current_user %}
+            <span class="btn" style="cursor: default; background: transparent; border-color: transparent; color: var(--muted);">User: {{ current_user }}</span>
+            <form method="POST" action="/logout" style="display:inline; margin:0;">
+                <button class="btn" type="submit">Logout</button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 
     <div class="row">

@@ -193,6 +193,12 @@
         <div class="links">
             <a class="btn" href="/">Real Dashboard</a>
             <a class="btn primary" href="/demo">Demo Mode</a>
+            {% if current_user %}
+            <span class="btn" style="cursor: default; background: transparent; border-color: transparent; color: var(--muted);">User: {{ current_user }}</span>
+            <form method="POST" action="/logout" style="display:inline; margin:0;">
+                <button class="btn" type="submit">Logout</button>
+            </form>
+            {% endif %}
         </div>
     </div>
 
@@ -275,6 +281,10 @@ function updateStatus(payload) {
 async function fetchDemoState() {
     try {
         const res = await fetch("/demo/state");
+        if (res.status === 401) {
+            window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname);
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         updateStatus(data);

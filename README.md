@@ -12,6 +12,24 @@ This project simulates a 4-way intersection using 4 video feeds (`videos/north.m
 4) Open the dashboard:
    - `http://127.0.0.1:5000/`
 
+## Dashboard login (username/password)
+
+The Flask dashboard now requires a login.
+
+- On first run, a user is auto-created and the credentials are printed in the terminal.
+  - Default username: `admin`
+  - Password: auto-generated (printed once)
+- To control the initial credentials, set:
+  - `DASHBOARD_ADMIN_USER` (optional, default `admin`)
+  - `DASHBOARD_ADMIN_PASSWORD` (recommended)
+- For session signing, set `DASHBOARD_SECRET_KEY` (recommended for anything beyond local demo).
+
+## Fixed-time fallback (if adaptive control fails)
+
+If the perception/adaptive algorithm crashes or stops updating, the system automatically switches to a fixed-time cycle:
+`N -> E -> S -> W` (default 12s green each), with the normal 3s yellow, plus a 2s `ALL_RED` clearance between phases.
+The dashboard `mode` shows `FIXED_FALLBACK` when this happens.
+
 ## What it runs
 
 - Main control loop: `main.py` (vehicle counting, emergency detection, WAPS scheduling, signal timing)

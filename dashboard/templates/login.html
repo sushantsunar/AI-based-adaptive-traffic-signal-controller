@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Login</title>
+    <style>
+        :root {
+            --bg: #06131a;
+            --panel: #0f2230;
+            --panel-2: #143044;
+            --border: #2f4f63;
+            --text: #e7f4ff;
+            --muted: #9bb8ca;
+            --danger: #ef4444;
+            --accent: #22d3ee;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 10% 10%, #133042 0%, transparent 45%),
+                radial-gradient(circle at 90% 15%, #163a4f 0%, transparent 40%),
+                var(--bg);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .card {
+            width: min(520px, 96vw);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(180deg, var(--panel-2), var(--panel));
+            padding: 18px;
+        }
+
+        h1 { margin: 0 0 6px; font-size: 1.35rem; }
+        p { margin: 0 0 14px; color: var(--muted); }
+
+        form { display: grid; gap: 10px; }
+
+        label { font-size: .85rem; color: var(--muted); }
+
+        input {
+            width: 100%;
+            background: #0a1b26;
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .row { display: grid; gap: 6px; }
+
+        .btn {
+            border: 1px solid #1f8ba7;
+            border-radius: 10px;
+            background: #155e75;
+            color: var(--text);
+            padding: 10px 12px;
+            text-decoration: none;
+            font-size: .95rem;
+            cursor: pointer;
+        }
+
+        .btn:hover { filter: brightness(1.08); }
+
+        .error {
+            border: 1px solid rgba(239, 68, 68, 0.55);
+            background: rgba(239, 68, 68, 0.12);
+            color: #fecaca;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: .92rem;
+        }
+
+        .hint {
+            margin-top: 12px;
+            font-size: .85rem;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+        code { color: #a5f3fc; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Traffic Dashboard Login</h1>
+        <p>Sign in to access the dashboard.</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+            <input type="hidden" name="next" value="{{ next or '/' }}" />
+            <div class="row">
+                <label for="username">Username</label>
+                <input id="username" name="username" autocomplete="username" required />
+            </div>
+            <div class="row">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button class="btn" type="submit">Login</button>
+        </form>
+
+        <div class="hint">
+            First run auto-creates an <code>admin</code> user and prints the password in the terminal.
+            Set <code>DASHBOARD_ADMIN_PASSWORD</code> (and optionally <code>DASHBOARD_ADMIN_USER</code>) to control it.
+        </div>
+    </div>
+</body>
+</html>
+

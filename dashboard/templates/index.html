@@ -269,6 +269,12 @@
         <div class="links">
             <a class="btn" href="/violations">Violation Monitor</a>
             <a class="btn primary" href="/demo">Demo Mode</a>
+            {% if current_user %}
+            <span class="btn" style="cursor: default; background: transparent; border-color: transparent; color: var(--muted);">User: {{ current_user }}</span>
+            <form method="POST" action="/logout" style="display:inline; margin:0;">
+                <button class="btn" type="submit">Logout</button>
+            </form>
+            {% endif %}
             <button class="btn" onclick="refreshNow()">Refresh</button>
         </div>
     </div>
@@ -459,6 +465,10 @@ function updateSignalsAndCards() {
 async function fetchData() {
     try {
         const res = await fetch("/data");
+        if (res.status === 401) {
+            window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname);
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const d = await res.json();
@@ -495,6 +505,10 @@ async function fetchData() {
 async function fetchLiveCounts() {
     try {
         const res = await fetch("/live-counts");
+        if (res.status === 401) {
+            window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname);
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         uiState.liveCount = data || uiState.liveCount;
@@ -514,6 +528,10 @@ async function applyManualSwitch() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ direction, duration })
         });
+        if (res.status === 401) {
+            window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname);
+            return;
+        }
         const out = await res.json();
         if (!res.ok || !out.ok) throw new Error(out.error || "manual override failed");
 
@@ -528,6 +546,10 @@ async function applyManualSwitch() {
 async function clearManualSwitch() {
     try {
         const res = await fetch("/manual-switch/clear", { method: "POST" });
+        if (res.status === 401) {
+            window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname);
+            return;
+        }
         const out = await res.json();
         if (!res.ok || !out.ok) throw new Error("clear override failed");
 

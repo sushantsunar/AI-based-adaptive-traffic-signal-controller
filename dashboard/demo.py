@@ -3,7 +3,7 @@ import cv2
 import time
 import threading
 import atexit
-from flask import Blueprint, render_template, Response, jsonify, abort
+from flask import Blueprint, render_template, Response, jsonify, abort, session, request, redirect, url_for
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 VIDEOS_DIR = os.path.join(BASE_DIR, "videos")
@@ -95,6 +95,17 @@ class DemoCameraStream:
 
 
 demo_bp = Blueprint("demo", __name__, url_prefix="/demo")
+
+
+@demo_bp.before_request
+def _protect_demo():
+    if session.get("user_id"):
+        return None
+    # For fetch() callers, return 401 JSON instead of HTML redirect.
+    if request.path == "/demo/state":
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    nxt = request.full_path if request.query_string else request.path
+    return redirect(url_for("login", next=nxt))
 
 camera_streams = {
     direction: DemoCameraStream(path)

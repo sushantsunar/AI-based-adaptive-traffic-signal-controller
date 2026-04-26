@@ -1,6 +1,8 @@
-from flask import Flask, render_template, Response, jsonify, send_from_directory, abort, request, redirect, url_for
+from flask import Flask, render_template, Response, jsonify, send_from_directory, abort, request, redirect, url_for, session
 from dashboard.shared_data import traffic_state
 from flask_cors import CORS
+from functools import wraps
+from werkzeug.security import check_password_hash
 import cv2
 import sqlite3
 import time
@@ -9,6 +11,9 @@ import atexit
 import os
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get("DASHBOARD_SECRET_KEY", "dev-secret-change-me")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 CORS(app)
 
 from dashboard.demo import demo_bp
@@ -18,6 +23,45 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_PATH = os.path.join(BASE_DIR, "database", "traffic.db")
 VIOLATIONS_DIR = os.path.join(BASE_DIR, "violations")
 VIDEOS_DIR = os.path.join(BASE_DIR, "videos")
+
+from database.db import init_db
+init_db()
+
+
+def _db_connect():
+    return sqlite3.connect(DB_PATH)
+
+
+def _get_user_by_username(username: str):
+    if not username:
+        return None
+    conn = _db_connect()
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, password_hash FROM users WHERE username = ?", (username,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {"id": row[0], "username": row[1], "password_hash": row[2]}
+
+
+def login_required(api: bool = False):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not session.get("user_id"):
+                if api:
+                    return jsonify({"ok": False, "error": "auth_required"}), 401
+                nxt = request.full_path if request.query_string else request.path
+                return redirect(url_for("login", next=nxt))
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@app.context_processor
+def _inject_current_user():
+    return {"current_user": session.get("username")}
 
 
 class CameraStream:
@@ -134,6 +178,7 @@ def gen_frames(direction):
 
 
 @app.route("/video/<direction>")
+@login_required()
 def video_feed(direction):
     direction = direction.upper()
     if direction not in camera_streams:
@@ -156,6 +201,7 @@ def _safe_count_dict(source):
 
 
 @app.route("/data")
+@login_required(api=True)
 def data():
     state = dict(traffic_state)
     state["live_vehicle_count"] = _safe_count_dict(state.get("live_vehicle_count", {}))
@@ -164,6 +210,7 @@ def data():
 
 
 @app.route("/live-counts")
+@login_required(api=True)
 def live_counts():
     # Keep dashboard responsive: reuse algorithm-side counts (already ROI-filtered).
     counts = traffic_state.get("live_vehicle_count", {})
@@ -172,6 +219,7 @@ def live_counts():
 
 
 @app.route("/manual-switch", methods=["POST"])
+@login_required(api=True)
 def manual_switch():
     payload = request.get_json(silent=True) or {}
     direction = str(payload.get("direction", "")).upper()
@@ -193,6 +241,7 @@ def manual_switch():
 
 
 @app.route("/manual-switch/clear", methods=["POST"])
+@login_required(api=True)
 def clear_manual_switch():
     traffic_state["manual_override"] = {
         "enabled": False,
@@ -203,11 +252,43 @@ def clear_manual_switch():
 
 
 @app.route("/")
+@login_required()
 def index():
     return render_template("index.html")
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        if session.get("user_id"):
+            return redirect(url_for("index"))
+        return render_template("login.html", error=None, next=request.args.get("next", "/"))
+
+    # POST
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    nxt = request.form.get("next") or "/"
+    if not str(nxt).startswith("/"):
+        nxt = "/"
+
+    user = _get_user_by_username(username)
+    if not user or not check_password_hash(user["password_hash"], password):
+        return render_template("login.html", error="Invalid username or password.", next=nxt), 401
+
+    session.clear()
+    session["user_id"] = int(user["id"])
+    session["username"] = user["username"]
+    return redirect(nxt)
+
+
+@app.route("/logout", methods=["POST", "GET"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.route("/violations")
+@login_required()
 def get_violations():
     selected_direction = request.args.get("direction", "ALL").upper()
     valid_directions = {"N", "S", "E", "W"}
@@ -292,6 +373,7 @@ def get_violations():
 
 
 @app.route("/violations/clear", methods=["POST"])
+@login_required()
 def clear_violations():
     # Clear DB rows.
     conn = sqlite3.connect(DB_PATH)
@@ -338,6 +420,7 @@ def clear_violations():
 
 
 @app.route("/violation-image/<path:filename>")
+@login_required()
 def violation_image(filename):
     return send_from_directory(VIOLATIONS_DIR, filename)
 
